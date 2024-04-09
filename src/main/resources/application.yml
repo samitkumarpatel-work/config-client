@@ -1,0 +1,17 @@
+legacyCountryCodes: [A]
+spring:
+  application:
+    name: config-client
+  config:
+    import: configserver:http://localhost:8888
+#  cloud:
+#    config:
+#      uri: http://localhost:8888
+#      import-check: false
+#      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
