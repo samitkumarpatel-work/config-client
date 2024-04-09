@@ -5,3 +5,4 @@ To reload the configuration from config server, we need to send a POST request t
 ```shell
 curl -X POST http://localhost:8080/actuator/refresh
 ```
+> Alternate of this would be, Please take a look on the Scheduler class in this example.
