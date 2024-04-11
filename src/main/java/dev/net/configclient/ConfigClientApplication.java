@@ -45,12 +45,11 @@ public class ConfigClientApplication {
 				.build();
 	}
 
-	@Value("${hello:defaultHello}")
-	String hello;
+	@Value("${localProperties:}")
+	private String localProperties;
 
-	//TODO This does not work, Fix me
-	@Value("${legacyCountryCodes:}")
-	private List<String> legacyCountryCodes;
+	@Value("${hello:defaultHello}")
+	private String hello;
 
 	final Environment environment;
 
@@ -65,8 +64,8 @@ public class ConfigClientApplication {
 				.bodyValue(
 						Map.of(
 								"hello", hello,
-								"helloV2", valueFromEnv,
-								"legacyCountryCodes", legacyCountryCodes
+								"helloFromEnv", valueFromEnv,
+								"localProperties", localProperties
 						)
 				);
 	}
@@ -80,6 +79,7 @@ class Config {
 	String[] supportedCountriesCode;
 	String[] supportedCountriesCodePrefix;
 	String[] legacyCountryCodes;
+	String serverName;
 }
 
 @Configuration
@@ -90,11 +90,11 @@ class Scheduler {
 	final WebClient.Builder builder;
 	final RefreshEndpoint refreshEndpoint;
 
-	@Scheduled(fixedDelay = 60000)
+	@Scheduled(fixedDelay = 5000)
 	void scheduler() {
-		System.out.println("#########REFRESHING CONFIGURATION##########");
+		System.out.println("######### REFRESHING CONFIGURATION ##########");
 
-		/*builder
+		/* builder
 				 .baseUrl("http://localhost:8080")
 				 .build()
 				 .post()

@@ -1,4 +1,6 @@
-legacyCountryCodes: [A]
+localProperties: "Local Properties"
+hello: localHello
+
 spring:
   application:
     name: config-client
