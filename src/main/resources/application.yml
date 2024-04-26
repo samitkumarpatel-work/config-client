@@ -1,17 +1,16 @@
 localProperties: "Local Properties"
-hello: localHello
+hello: ${hello:localHello}
 
 spring:
   application:
     name: config-client
   config:
     import: configserver:http://localhost:8888
-#  cloud:
-#    config:
-#      uri: http://localhost:8888
-#      import-check: false
-#      enabled: false
-
+  cloud:
+    config:
+      uri: http://localhost:8888
+      allowOverride: true
+      overrideNone: true
 management:
   endpoints:
     web:

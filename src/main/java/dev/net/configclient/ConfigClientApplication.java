@@ -1,14 +1,17 @@
 package dev.net.configclient;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.endpoint.RefreshEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,53 +29,79 @@ import java.util.Objects;
 
 @SpringBootApplication
 @RequiredArgsConstructor
-
 public class ConfigClientApplication {
 
-	final Config config;
+
 
 	public static void main(String[] args) {
 		SpringApplication.run(ConfigClientApplication.class, args);
 	}
 
 	@Bean
-	RouterFunction<ServerResponse> routerFunction() {
+	RouterFunction<ServerResponse> routerFunction(Handlers handlers, Config config) {
 		System.out.println(config);
 		return RouterFunctions
 				.route()
-				.GET("/api/static", serverRequest -> ServerResponse.ok().bodyValue(config))
-				.GET("/api/dynamic", this::dynamicProperties)
+				.GET("/api/static", request -> ServerResponse.ok().bodyValue(config))
+				.GET("/api/dynamic", handlers::dynamicProperties)
 				.build();
 	}
+}
+
+@Component
+@RefreshScope
+@RequiredArgsConstructor
+class Handlers {
+	final Config config;
+	final JavaRecord javaRecord;
+	final Environment environment;
 
 	@Value("${localProperties:}")
 	private String localProperties;
 
 	@Value("${hello:defaultHello}")
+	//@Value("#{ environment['hello'] }")
+	//@Value("#{ config.hello }")
 	private String hello;
 
-	final Environment environment;
-
-	private Mono<ServerResponse> dynamicProperties(ServerRequest request) {
+	public Mono<ServerResponse> dynamicProperties(ServerRequest request) {
 		var valueFromEnv = Objects.requireNonNullElseGet(environment.getProperty("hello", String.class), () -> "NULL");
 		System.out.println(valueFromEnv);
-
 		System.out.println(Objects.requireNonNullElseGet(environment.getProperty("legacyCountryCodes", List.class), () -> List.of("key","value")));
 
 		return ServerResponse
 				.ok()
 				.bodyValue(
 						Map.of(
-								"hello", hello,
-								"helloFromEnv", valueFromEnv,
+								"@Value.hello", hello,
+								"ConfigurationProperties.hello", config.getHello(),
+								"Environment.hello", valueFromEnv,
+								"Record.hello", javaRecord.hello(),
 								"localProperties", localProperties
 						)
 				);
 	}
-
 }
 
-@ConfigurationProperties(prefix = "")
+/*@Component
+@RefreshScope //Caused by: java.lang.IllegalArgumentException: Cannot subclass final class dev.net.configclient.JavaRecord
+record JavaRecord(@Value("${hello}") String hello) {}*/
+
+@Component
+@RefreshScope
+class JavaRecord {
+	private final String hello;
+
+	public String hello() {
+		return hello;
+	}
+	public JavaRecord(@Value("${hello}") String hello) {
+		this.hello = hello;
+	}
+}
+
+
+@ConfigurationProperties()
 @Component
 @Data
 class Config {
@@ -80,6 +109,7 @@ class Config {
 	String[] supportedCountriesCodePrefix;
 	String[] legacyCountryCodes;
 	String serverName;
+	String hello;
 }
 
 @Configuration
@@ -105,7 +135,6 @@ class Scheduler {
 
 		// OR
 
-		refreshEndpoint.refresh();
-
+		refreshEndpoint.refresh().forEach(System.out::println);
 	}
 }
