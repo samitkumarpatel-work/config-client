@@ -5,7 +5,9 @@ spring:
   application:
     name: config-client
   config:
-    import: configserver:http://localhost:8888
+    import: optional:configserver:http://localhost:8888
+    #import: configserver:http://localhost:8888?fail-fast=true&max-attempts=10&max-interval=1500&multiplier=12&initial-interval=1100":
+    #name: config-client
   cloud:
     config:
       uri: http://localhost:8888
