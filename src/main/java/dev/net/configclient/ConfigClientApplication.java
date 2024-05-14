@@ -1,5 +1,6 @@
 package dev.net.configclient;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,8 @@ import org.springframework.cloud.endpoint.RefreshEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -38,6 +41,7 @@ public class ConfigClientApplication {
 		return RouterFunctions
 				.route()
 				.GET("/api/prop", handlers::dynamicProperties)
+				.GET("/api/file", handlers::fromFile)
 				.build();
 	}
 }
@@ -69,7 +73,17 @@ class Handlers {
 						)
 				);
 	}
+
+	@Value("${spring.cloud.config.uri}/${spring.application.name}/default/main/spa.json")
+	private UrlResource resource;
+	final ObjectMapper objectMapper;
+	public Mono<ServerResponse> fromFile(ServerRequest request) {
+		return Mono.fromCallable(() -> objectMapper.readValue(resource.getInputStream(), Spa.class))
+				.flatMap(ServerResponse.ok()::bodyValue);
+	}
 }
+
+record Spa(String name, String serverName){}
 
 /*@Component
 @RefreshScope //Caused by: java.lang.IllegalArgumentException: Cannot subclass final class dev.net.configclient.JavaRecord
